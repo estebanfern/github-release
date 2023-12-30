@@ -1,4 +1,4 @@
-name: Example Tag/Release CI
+name: Tag/Release CI
 on:
   workflow_dispatch:
     inputs:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Create Release
+      - name: Create Tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -19,12 +19,23 @@ jobs:
           git config --local user.name "Esteban Fernandez"
           git tag -a ${{ github.event.inputs.version }} -m "MiShop API Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ secrets.event.inputs.version }}
+        run: |
+          echo "Creating Release $VERSION"
+          CODE=$(
+            curl --header "Accept: application/vnd.github+json" --header "Authorization: Bearer $GITHUB_TOKEN" --data '{"tag_name": "$VERSION}","target_commitish": "master","name": "App Version $VERSION","body": "Release of version $VERSION","draft": false,"prerelease": false,"generate_release_notes":false}' https://api.github.com/repos/estebanfern/github-release/releases
+          )
+          echo $CODE
+
   build:
     needs: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build with Maven
+      - name: Build App
         run: |
           echo "Building app v${{ github.event.inputs.version}}"
       - name: Build & Push Docker Image to DockerHub
