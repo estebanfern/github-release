@@ -18,7 +18,7 @@ jobs:
         run: |
           git config --local user.email "estebangfernandeza@gmail.com"
           git config --local user.name "Esteban Fernandez"
-          git tag -a ${{ github.event.inputs.version }} -m "MiShop API Release ${{ github.event.inputs.version }}"
+          git tag -a ${{ github.event.inputs.version }} -m "Example Release ${{ github.event.inputs.version }}"
           git push origin ${{ github.event.inputs.version }}
       - name: Create Release
         env:
@@ -27,11 +27,17 @@ jobs:
         run: |
           echo "Creating Release $VERSION"
           CODE=$(
-            curl  --location https://api.github.com/repos/estebanfern/github-release/releases \
+            curl  --location https://api.github.com/repos/estebanfern/github-release/releases --write-out '%{http_code}' --output /dev/null \
                   --header "Accept: application/vnd.github+json" \
                   --header "Authorization: Bearer $GITHUB_TOKEN" --data "{\"tag_name\": \"$VERSION\",\"target_commitish\": \"main\",\"name\": \"App Version $VERSION\",\"body\": \"Release of version $VERSION\",\"draft\": false,\"prerelease\": false,\"generate_release_notes\":false}"
           )
-          echo $CODE
+          if [ $CODE!="201" ]
+          then
+            echo "FAILURE - $CODE"
+            exit 1
+          else
+            echo "SUCCESS - $CODE"
+          fi
 
   build:
     needs: release
